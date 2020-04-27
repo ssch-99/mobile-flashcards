@@ -1,6 +1,6 @@
 import { AsyncStorage } from 'react-native'
 import { Notifications } from 'expo'
-import {Permissions} from "expo-permissions";
+import * as Permissions from 'expo-permissions';
 
 const DECKS_STORAGE_KEY = 'FlashCards:decks'
 const NOTIFICATION_KEY = 'FlashCards:notifications'
@@ -42,17 +42,11 @@ export function saveQuestion(key,question) {
         })
 }
 
-//Notifications (doesn't work with current version)
 
-export function clearLocalNotification () {
-    return AsyncStorage.removeItem(NOTIFICATION_KEY)
-        .then(Notifications.cancelAllScheduledNotificationsAsync)
-}
-
-function createNotification () {
+ function createNotification () {
     return {
         title: 'Play a Deck today',
-        body: "👋 don't forget to play a deck!",
+        body: "👋 don't forget to study your decks!",
         ios: {
             sound: true,
         },
@@ -65,32 +59,45 @@ function createNotification () {
     }
 }
 
-export function setLocalNotification () {
-    AsyncStorage.getItem(NOTIFICATION_KEY)
-        .then(JSON.parse)
-        .then((data) => {
-            if (data === null) {
-                Permissions.askAsync(Permissions.NOTIFICATIONS)
-                    .then(({ status }) => {
-                        if (status === 'granted') {
-                            Notifications.cancelAllScheduledNotificationsAsync()
 
-                            let tomorrow = new Date()
-                            tomorrow.setDate(tomorrow.getDate() + 1)
-                            tomorrow.setHours(20)
-                            tomorrow.setMintutes(0)
+export async function  getPushNotificationPermissions() {
+    const {status: existingStatus} = await Permissions.getAsync(Permissions.NOTIFICATIONS);
+    let finalStatus = existingStatus;
 
-                            Notifications.scheduleLocalNotificationsAsync(
-                                createNotification(),
-                                {
-                                    time: tomorrow,
-                                    repeat: 'day',
-                                }
-                            )
+    // only ask if permissions have not already been determined, because
+    // iOS won't necessarily prompt the user a second time.
+    if (existingStatus !== 'granted') {
+        // Android remote notification permissions are granted during the app
+        // install, so this will only ask on iOS
+        const {status} = await Permissions.askAsync(Permissions.NOTIFICATIONS);
+        finalStatus = status;
+    }
 
-                            AsyncStorage.setItem(NOTIFICATION_KEY, JSON.stringify(true))
-                        }
-                    })
+    // Stop here if the user did not grant permissions
+    if (finalStatus !== 'granted') {
+
+        return;
+    } else {
+
+        await Notifications.cancelAllScheduledNotificationsAsync()
+
+        let tomorrow = new Date()
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        tomorrow.setHours(20)
+        tomorrow.setMinutes(0)
+
+        await Notifications.scheduleLocalNotificationAsync(
+            createNotification(),
+            {
+                time: tomorrow,
+                repeat: 'day',
             }
-        })
+        )
+
+
+        console.log(finalStatus)
+
+        // Get the token that uniquely identifies this device
+        console.log("Notification Token: ", await Notifications.getExpoPushTokenAsync());
+    }
 }

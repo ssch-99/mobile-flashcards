@@ -4,6 +4,8 @@ import {
     Button, Content, Text, Badge, Form, H3
 } from 'native-base';
 import {connect} from "react-redux";
+import {Notifications} from "expo";
+import {createNotification} from "../utils/api";
 class Quiz extends Component {
 
     state = {
@@ -42,6 +44,24 @@ class Quiz extends Component {
                 questionIndex: oldState.questionIndex + 1
             }))
 
+        }
+
+        if(this.state.questionIndex === this.state.questions.length) {
+            // Remove Notification and set it up for tomorrow
+            Notifications.cancelAllScheduledNotificationsAsync()
+
+            let tomorrow = new Date()
+            tomorrow.setDate(tomorrow.getDate() + 1)
+            tomorrow.setHours(20)
+            tomorrow.setMinutes(0)
+
+            Notifications.scheduleLocalNotificationAsync(
+                createNotification(),
+                {
+                    time: tomorrow,
+                    repeat: 'day',
+                }
+            )
         }
 
 

@@ -21,12 +21,6 @@ class Home extends Component {
         })
     }
 
-//To Test
-    clearAllData() {
-        AsyncStorage.getAllKeys()
-            .then(keys => AsyncStorage.multiRemove(keys))
-            .then(() => alert('success'));
-    }
 
     render() {
         //Object.keys(this.props.decks).map(key => ({ key, value: this.props.decks[key] })
